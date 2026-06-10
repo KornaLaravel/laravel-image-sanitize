@@ -5,6 +5,7 @@ namespace LaravelAt\ImageSanitize;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use LaravelAt\ImageSanitize\Lists\MimeTypeList;
+use RuntimeException;
 
 class RequestHandler
 {
@@ -80,7 +81,7 @@ class RequestHandler
         $contents = $file->get();
 
         if ($contents === false) {
-            return '';
+            throw new RuntimeException('The uploaded file could not be read.');
         }
 
         return $contents;

@@ -7,6 +7,7 @@ use Illuminate\Http\UploadedFile;
 use LaravelAt\ImageSanitize\ImageSanitize;
 use LaravelAt\ImageSanitize\RequestHandler;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 
 class RequestHandlerTest extends TestCase
 {
@@ -131,5 +132,27 @@ class RequestHandlerTest extends TestCase
             $sanitizedImageContent
         );
         $this->assertFalse($this->sanitizer->detect($sanitizedImageContent));
+    }
+
+    #[Test]
+    public function it_fails_closed_when_an_uploaded_image_cannot_be_read(): void
+    {
+        $request = new Request;
+
+        $request->files->set('image', new class(__DIR__.'/stubs/exploit.jpeg', 'unreadable.jpeg', 'image/jpeg', null, true) extends UploadedFile
+        {
+            /**
+             * @return false
+             */
+            public function get()
+            {
+                return false;
+            }
+        });
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('The uploaded file could not be read.');
+
+        $this->handler->handle($request);
     }
 }

@@ -2,8 +2,10 @@
 
 namespace LaravelAt\ImageSanitize\Tests;
 
+use Intervention\Image\ImageManager;
 use LaravelAt\ImageSanitize\ImageSanitize;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 
 class ImageSanitizeTest extends TestCase
 {
@@ -24,6 +26,18 @@ class ImageSanitizeTest extends TestCase
 
         $this->assertTrue(
             $this->app->make(ImageSanitize::class)->detect('clean-prefix custom-payload clean-suffix')
+        );
+    }
+
+    #[Test]
+    public function it_does_not_resolve_the_image_manager_when_detecting_patterns(): void
+    {
+        $this->app->bind(ImageManager::class, function (): never {
+            throw new RuntimeException('The image manager should only be resolved when sanitizing.');
+        });
+
+        $this->assertTrue(
+            $this->app->make(ImageSanitize::class)->detect('<?php echo "payload";')
         );
     }
 

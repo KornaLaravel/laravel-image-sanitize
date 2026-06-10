@@ -3,6 +3,7 @@
 namespace LaravelAt\ImageSanitize;
 
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Contracts\Container\Container;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\Encoders\AutoEncoder;
 use Intervention\Image\ImageManager;
@@ -15,14 +16,9 @@ class ImageSanitize
 
     public function __construct(
         protected PatternList $patternList,
-        ?ImageManager $imageManager = null,
         protected ?Repository $config = null,
-    ) {
-        $this->imageManager = $imageManager ?? new ImageManager(
-            Driver::class,
-            strip: true,
-        );
-    }
+        protected ?Container $container = null,
+    ) {}
 
     public function detect(string $content): bool
     {
@@ -37,10 +33,30 @@ class ImageSanitize
 
     public function sanitize(string $content): EncodedImageInterface
     {
-        $image = $this->imageManager->read($content);
+        $image = $this->imageManager()->decodeBinary($content);
 
         return $image->encode(new AutoEncoder(
             quality: (int) ($this->config?->get('image-sanitize.quality', 100) ?? 100)
         ));
+    }
+
+    protected function imageManager(): ImageManager
+    {
+        if (isset($this->imageManager)) {
+            return $this->imageManager;
+        }
+
+        if ($this->container?->bound(ImageManager::class) === true) {
+            $this->imageManager = $this->container->get(ImageManager::class);
+
+            return $this->imageManager;
+        }
+
+        $this->imageManager = new ImageManager(
+            Driver::class,
+            strip: true,
+        );
+
+        return $this->imageManager;
     }
 }

@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Breaking Changes
 
 - Changed `ImageSanitize::sanitize()` to return `Intervention\Image\Interfaces\EncodedImageInterface` instead of the concrete `Intervention\Image\EncodedImage` class.
+- Upgraded the package dependency from Intervention Image 3 to Intervention Image 4.
 - Added an explicit `Symfony\Component\HttpFoundation\Response` return type to `ImageSanitizeMiddleware::handle()`.
 - Removed the legacy Scrutinizer integration in favor of GitHub Actions, Pint, and PHPStan.
 - Added Pint and PHPStan level 7 to the default quality workflow, making contributor checks stricter.
@@ -27,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Resolve `Intervention\Image\ImageManager` through Laravel's container and respect an existing application binding.
+- Use Intervention Image 4's binary decode API when sanitizing uploaded image contents.
 - Use Laravel/Symfony uploaded file MIME detection instead of calling `mime_content_type()` directly.
 - Update README usage examples for modern Laravel middleware registration in `bootstrap/app.php`.
 - Update the GitHub Actions checkout action to `actions/checkout@v4`.
@@ -40,6 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Preserve all nested uploaded files when flat and nested file inputs are mixed in the same request.
 - Preserve nested uploads that reuse field names inside repeated array inputs.
 - Declare the `illuminate/http` dependency explicitly.
+- Avoid resolving `Intervention\Image\ImageManager` when only detecting payload patterns.
 
 ## v4.0.0 - 2026-04-27
 

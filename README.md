@@ -11,6 +11,8 @@ It was created after being inspired by [@appelsiini](https://github.com/appelsii
 
 ## Installation
 
+This version requires PHP 8.3+, Laravel 12 or 13, and Intervention Image 4.
+
 You can install the package via composer:
 
 ```bash

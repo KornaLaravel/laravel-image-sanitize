@@ -2,15 +2,15 @@
 
 namespace LaravelAt\ImageSanitize\Tests;
 
-use ImageSanitize;
+use LaravelAt\ImageSanitize\Facades\ImageSanitizeFacade as ImageSanitize;
 use PHPUnit\Framework\Attributes\Test;
 
 class ImageSanitizeFacadeTest extends TestCase
 {
     #[Test]
-    public function it_provides_a_facade()
+    public function it_provides_a_facade(): void
     {
-        $content = file_get_contents(__DIR__.'/stubs/exploit.jpeg');
+        $content = $this->exploitImageContents();
 
         $this->assertTrue(ImageSanitize::detect($content));
     }

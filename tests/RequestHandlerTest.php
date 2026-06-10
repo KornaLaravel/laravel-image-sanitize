@@ -14,6 +14,7 @@ class RequestHandlerTest extends TestCase
      * @var RequestHandler
      */
     protected $handler;
+
     /**
      * @var ImageSanitize
      */
@@ -47,18 +48,84 @@ class RequestHandlerTest extends TestCase
     }
 
     #[Test]
+    public function it_detects_webp_images_in_the_request(): void
+    {
+        $request = new Request;
+
+        $request->files->set('image', UploadedFile::fake()->image('image.webp'));
+
+        $this->assertArrayHasKey(
+            'image',
+            $this->handler->getImages($request->allFiles())
+        );
+    }
+
+    #[Test]
+    public function it_detects_images_in_mixed_flat_and_nested_uploads(): void
+    {
+        $request = new Request;
+
+        $request->files->set('avatar', UploadedFile::fake()->image('avatar.jpeg'));
+        $request->files->set('gallery', [
+            UploadedFile::fake()->image('gallery.jpeg'),
+        ]);
+
+        try {
+            $images = $this->handler->getImages($request->allFiles());
+        } catch (\TypeError $exception) {
+            $this->fail('Mixed flat and nested uploads should be traversed recursively.');
+        }
+
+        $filenames = array_map(
+            fn (UploadedFile $file): string => $file->getClientOriginalName(),
+            $images
+        );
+
+        $this->assertContains('avatar.jpeg', $filenames);
+        $this->assertContains('gallery.jpeg', $filenames);
+    }
+
+    #[Test]
+    public function it_keeps_nested_uploads_with_repeated_field_names(): void
+    {
+        $request = new Request;
+
+        $request->files->set('gallery', [
+            ['image' => UploadedFile::fake()->image('first.jpeg')],
+            ['image' => UploadedFile::fake()->image('second.jpeg')],
+        ]);
+
+        $images = $this->handler->getImages($request->allFiles());
+        $filenames = array_map(
+            fn (UploadedFile $file): string => $file->getClientOriginalName(),
+            $images
+        );
+
+        $this->assertContains('first.jpeg', $filenames);
+        $this->assertContains('second.jpeg', $filenames);
+    }
+
+    #[Test]
     public function it_swaps_the_file_content_with_the_sanitized_string(): void
     {
-        $uploadedFile = UploadedFile::fake()->image('malicious.jpeg', '100', '100');
-        file_put_contents($uploadedFile->getPathname(), file_get_contents(__DIR__.'/stubs/exploit.jpeg'));
+        $uploadedFile = UploadedFile::fake()->image('malicious.jpeg', 100, 100);
+        file_put_contents($uploadedFile->getPathname(), $this->exploitImageContents());
 
         $request = new Request;
         $request->files->set('image', $uploadedFile);
 
-        $maliciousImageContent = $request->file('image')->get();
+        $maliciousImageContent = $uploadedFile->get();
+        if ($maliciousImageContent === false) {
+            $this->fail('The malicious test upload could not be read before sanitization.');
+        }
+
         $this->handler->handle($request);
 
-        $sanitizedImageContent = $request->file('image')->get();
+        $sanitizedImageContent = $uploadedFile->get();
+        if ($sanitizedImageContent === false) {
+            $this->fail('The malicious test upload could not be read after sanitization.');
+        }
+
         $this->assertNotEquals(
             $maliciousImageContent,
             $sanitizedImageContent
